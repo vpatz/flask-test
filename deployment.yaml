@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ImageStream
 metadata:
   name: flask-app
-  namespace: default
+  namespace: flask-test 
 spec:
   lookupPolicy:
     local: false
@@ -11,20 +11,17 @@ apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
   name: flask-app
-  namespace: default
+  namespace: flask-test
 spec:
   source:
     type: Git
     git:
-      uri: https://github.com/your-repo/flaskTest.git  # Replace with your actual repo URL
+      uri: https://github.com/vpatz/flask-test.git  # Replace with your actual repo URL
     contextDir: /
   strategy:
-    type: Source
-    sourceStrategy:
-      from:
-        kind: ImageStreamTag
-        name: python:3.9
-        namespace: openshift
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Containerfile
   output:
     to:
       kind: ImageStreamTag
@@ -38,7 +35,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: flask-app
-  namespace: default
+  namespace: flask-test
 spec:
   replicas: 1
   selector:
@@ -51,7 +48,7 @@ spec:
     spec:
       containers:
       - name: flask-app
-        image: flask-app:latest
+        image: image-registry.openshift-image-registry.svc:5000/flask-test/flask-app:latest
         ports:
         - containerPort: 5000
         env:
@@ -64,7 +61,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: flask-app
-  namespace: default
+  namespace: flask-test
 spec:
   selector:
     app: flask-app
@@ -77,10 +74,13 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: flask-app
-  namespace: default
+  namespace: flask-test
 spec:
   to:
     kind: Service
     name: flask-app
   port:
     targetPort: 5000
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
